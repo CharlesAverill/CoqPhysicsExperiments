@@ -1,0 +1,9 @@
+*.glob
+*.vo
+*.vok
+*.vos
+*.d
+*.aux
+.vscode/
+Makefile
+Makefile.conf
