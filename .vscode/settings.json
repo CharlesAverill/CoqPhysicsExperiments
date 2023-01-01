@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "src/utils/arguments.c": "C",
+        "*.ttml": "xml",
+        "*.ttss": "css"
+    }
+}
