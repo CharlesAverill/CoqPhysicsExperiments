@@ -155,6 +155,10 @@ Fixpoint plus (n : nat) (m : nat) : nat :=
     | S n' => S (plus n' m)
     end.
 
+Notation "x + y" := (plus x y)
+    (at level 50, left associativity)
+    : nat_scope.
+
 (*
     TA Lemma 2.2.2
 
@@ -209,7 +213,7 @@ Qed.
     have (a + b) + c = a + (b + c).
 *)
 Proposition add_assoc : forall a b c : nat,
-    (a + b) + c = a + (b + c).
+    a + (b + c) = (a + b) + c.
 Proof.
     intros a b c. induction a as [| a' IHa' ].
     - (* a = 0 *)
@@ -430,31 +434,273 @@ Proof.
     (* TODO *)
     Admitted.
 
-Proposition a_lt_b_for_sum_a_d_eq_b : forall a b d : nat,
+Proposition a_lt_b_for_sum_a_d_eq_b : forall a b : nat, exists d : nat,
     (b = a + d) -> (a <? b) = true.
 Proof.
-    intros a b d H. 
+    intros a b. 
     (* TODO *)
     Admitted.
 
-
+(* 
+    TA Definition 2.3.1
+*)
 Fixpoint mult (n m : nat) : nat :=
     match n with
     | O => O
     | S n' => plus m (mult n' m)
     end.
 
+Notation "x * y" := (mult x y)
+    (at level 40, left associativity)
+    : nat_scope.
+
+Lemma mul_0_r : forall n : nat,
+    n * 0 = 0.
+Proof.
+    intros n. induction n as [| n' IHn' ].
+    - (* n = 0 *)
+        simpl. reflexivity.
+    - (* n = S n' *)
+        simpl. rewrite -> IHn'. reflexivity.
+Qed.
+
+Lemma mul_n_Sk : forall n k : nat,
+    n * (S k) = n + (n * k).
+Proof.
+    intros n k. induction n as [| n' IHn' ].
+    - (* n = 0 *)
+        simpl. reflexivity.
+    - (* n = S n' *)
+        simpl. rewrite -> IHn', add_assoc, add_assoc.
+        assert (k + n' = n' + k) as H.
+        {
+            rewrite -> add_comm. reflexivity.
+        }
+        rewrite -> H. reflexivity.
+Qed.
+
+(*
+    Lemma 2.3.2
+    
+    Let n, m be natural numbers. Then 
+    n * m = m * n.
+*)
+Lemma mul_comm : forall m n : nat,
+    n * m = m * n.
+Proof.
+    intros n m. induction n as [| n' IHn' ].
+    - (* n = 0 *)
+        simpl. rewrite -> mul_0_r. reflexivity.
+    - (* n = S n' *)
+        simpl. rewrite <- IHn'.
+        rewrite -> mul_n_Sk. reflexivity.
+Qed.
+
+(*
+    Lemma 2.3.3
+
+    Let n, m be natural numbers. Then 
+    n * m = 0 if and only if at least 
+    one of n, m is equal to zero. In 
+    particular, if n and m are both 
+    positive, then nm is also positive.
+*)
+Theorem nat_no_zero_divisors : forall n m : nat,
+    andb (positive n) (positive m) =  (positive (n * m)).
+Proof.
+    intros n m. induction n as [| n' IHn' ].
+    - (* n = 0 *)
+        simpl. reflexivity.
+    - (* n = S n' *)
+        simpl. induction m as [| m' IHm' ].
+        -- (* m = 0 *)
+            simpl. rewrite -> mul_0_r. reflexivity.
+        -- (* m = S m' *)
+            simpl. reflexivity.
+Qed.
+
+(*
+    Proposition 2.3.4
+
+    For any natural numbers a, b, c, we 
+    have a(b + c) = ab + ac and 
+    (b + c)a = ba + ca.
+*)
+Proposition mul_distribution : forall a b c : nat,
+    a * (b + c) = (a * b) + (a * c).
+Proof.
+    intros a b c. induction c as [| c' IHc' ].
+    - (* c = 0 *)
+        rewrite -> add_0_r, mul_0_r, add_0_r.
+        reflexivity.
+    - (* c = S c' *)
+        rewrite -> add_comm. simpl.
+        rewrite -> mul_n_Sk.
+        assert (c' + b = b + c').
+            { rewrite -> add_comm. reflexivity. }
+        rewrite -> add_comm, H, mul_n_Sk.
+        assert (a + a * c' = a * c' + a).
+            { rewrite -> add_comm. reflexivity. }
+        rewrite -> IHc', H0, add_assoc. reflexivity.
+Qed.
+
+(*
+    Proposition 2.3.5
+
+    For any natural numbers a, b, c, we 
+    have (a * b) * c = a * (b * c).
+*)
+Proposition mul_assoc : forall a b c : nat,
+    (a * b) * c = a * (b * c).
+Proof.
+    intros a b c. induction c as [| c' IHc' ].
+    - (* c = 0 *)
+        rewrite -> mul_0_r, mul_0_r, mul_0_r.
+        reflexivity.
+    - (* c = S c' *)
+        rewrite -> mul_n_Sk, mul_n_Sk.
+        rewrite -> mul_distribution.
+        assert (a * (b * c') = a * b * c').
+        { rewrite <- IHc'. reflexivity. }
+        rewrite -> H. reflexivity.
+Qed.
+
+(*
+    Proposition 2.3.6
+
+    If a, b are natural numbers such 
+    that a < b, and c is positive, 
+    then ac < bc.
+*)
+Proposition mul_preserves_order : forall a b c : nat,
+    a < b -> (positive c) = true -> (a * c) <? (b * c) = true.
+Proof.
+    intros a b c.
+    (* TODO : based on ordering proofs *)
+    Admitted.
+
+(*
+    Corollary 2.3.7
+
+    Let a, b, c be natural numbers such 
+    that ac = bc and c is non-zero. 
+    Then a = b
+*)
+Corollary mul_cancellation : forall a b c : nat,
+    (a * c = b * c) /\ (c <> 0) -> a = b.
+Proof.
+    intros a b c H. 
+    (* TODO : still can't figure out these logic-gate proofs *)
+    Admitted.
+
+(*
+    Proposition 2.3.9
+
+    Let n be a natural number, and let q 
+    be a positive number. Then there 
+    exist natural numbers m, r such that 
+    0 <= r < q and n = mq + r.
+*)
+
+(* TODO : not sure how to formulate this theorem *)
+
+(*
+    Definition 2.3.11
+*)
+Fixpoint exp (base power : nat) : nat :=
+    match power with
+    | O => S O
+    | S p => mult base (exp base p)
+    end.
+
+Notation "x ** y" := (exp x y)
+    (at level 30, right associativity)
+    : nat_scope.
+
+Theorem mul_1_r : forall n : nat,
+    n * 1 = n.
+Proof.
+    intros n. induction n as [| n' IHn' ].
+    - (* n = 0 *)
+        simpl. reflexivity.
+    - (* n = S n' *)
+        simpl. rewrite -> IHn'. reflexivity.
+Qed.
+
+Theorem pow_2_mul_self : forall n : nat,
+    n ** 2 = n * n.
+Proof.
+    intros n. induction n as [| n' IHn' ].
+    - (* n = 0 *)
+        simpl. reflexivity.
+    - (* n = S n' *)
+        simpl. rewrite -> mul_1_r. reflexivity.
+Qed.
+
+Theorem foil : forall a b c d : nat,
+    (a + b) * (c + d) = a * c + c * b + a * d + b * d.
+Proof.
+    intros a b c d. induction a as [| a' IHa' ].
+    - (* a = 0 *)
+        simpl. rewrite -> add_0_r. rewrite -> mul_distribution, mul_comm. reflexivity.
+    - (* a = S a' *)
+        assert ((S a' + b) * (c + d) = (S a' + b) * c + (S a' + b) * d).
+        {
+            rewrite -> mul_distribution. reflexivity.
+        }
+        rewrite -> H. rewrite -> mul_comm, mul_distribution.
+        assert ((S a' + b) * d = S a' * d + b * d).
+        {
+            rewrite -> mul_comm, mul_distribution.
+            rewrite -> mul_comm.
+            assert (d * b = b * d).
+            {
+                rewrite -> mul_comm. reflexivity.
+            }
+            rewrite -> H0. reflexivity.
+        }
+        rewrite -> H0, add_assoc.
+        assert (c * S a' = S a' * c).
+        {
+            rewrite -> mul_comm. reflexivity.
+        }
+        rewrite -> H1.
+        reflexivity.
+Qed.
+
+Theorem sum_n_n_eq_2n : forall n : nat,
+    n + n = 2 * n.
+Proof.
+    intros n. induction n as [| n' IHn' ].
+    - reflexivity.
+    - simpl. rewrite -> add_0_r. reflexivity.
+Qed. 
+
+(*
+    Exercise 2.3.4
+*)
+Theorem ex_2_3_4 : forall a b : nat,
+    (a + b) ** 2 = a ** 2 + (2 * a * b) + b ** 2.
+Proof.
+    intros a b. induction a as [| a' IHa' ].
+    - (* a = 0 *)
+        simpl. reflexivity.
+    - (* a = S a' *)
+        rewrite -> pow_2_mul_self, foil.
+        rewrite <- pow_2_mul_self.
+        rewrite <- pow_2_mul_self.
+        assert (S a' * b + S a' * b = 2 * S a' * b).
+        {
+            rewrite -> sum_n_n_eq_2n, mul_assoc. reflexivity. 
+        }
+        rewrite <- H, add_assoc. reflexivity.
+Qed.
+
 Fixpoint minus (n m:nat) : nat :=
     match n, m with
     | O , _ => O
     | S _ , O => n
     | S n', S m' => minus n' m'
-    end.
-
-Fixpoint exp (base power : nat) : nat :=
-    match power with
-    | O => S O
-    | S p => mult base (exp base p)
     end.
 
 End RealNumbers.
