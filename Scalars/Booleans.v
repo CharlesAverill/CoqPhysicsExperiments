@@ -1,6 +1,6 @@
 (* 
-    This file covers definitions and proofs 
-    regarding boolean values
+    This file covers definitions and 
+    proofs regarding boolean values
 *)
 
 Inductive bool : Type :=
@@ -58,6 +58,14 @@ Example andb_f_t: andb false true = false.
 Proof. reflexivity. Qed.
 Example andb_t_t: andb true true = true.
 Proof. reflexivity. Qed.
+
+Theorem b_and_b_is_b : forall (b : bool),
+    b && b = b.
+Proof.
+    intros b. destruct b.
+    - reflexivity.
+    - reflexivity.
+Qed.
 
 Definition orb (b_1 b_2 : bool) : bool := 
     match b_1 with 

@@ -1,26 +1,23 @@
 (* 
-    This file covers definitions and proofs 
-    regarding natural, integer, rational,
-    and real numbers. 
+    This file covers definitions and 
+    proofs regarding natural numbers.
     
-    These definitions follow from Terence 
-    Tao's 'Analysis'. The acronym 'TA'
-    references Tao's 'Analysis' text, usually
-    in reference to axioms, lemmas, theorems,
-    definitions, etc.
+    These definitions follow from 
+    Terence Tao's 'Analysis'.
 
     Coq's standard library provides an
-    implementation of natural numbers with
-    builtin decimal parsing. I'd like to use
-    that, so much of this file is just
-    proving that the axioms are true given
-    the definitions of various sets of
-    numbers that Coq has already put in place.
+    implementation of natural numbers 
+    with builtin decimal parsing. I'd 
+    like to use that, so much of this 
+    file is just proving that the axioms 
+    are true given the definitions of 
+    various sets of numbers that Coq has 
+    already put in place.
 *)
 
 From Scalars Require Export Booleans.
-
-Module RealNumbers.
+From Collections Require Export Lists.
+From Collections Require Export Multisets.
 
 Fixpoint eqb (n m : nat) : bool :=
     match n with
@@ -696,11 +693,70 @@ Proof.
         rewrite <- H, add_assoc. reflexivity.
 Qed.
 
+(*
+    Sets of natural numbers
+*)
+
+Definition nat_multiset := multiset nat.
+
+(*
+    Inspired by TA 3.1.4
+*)
+Fixpoint multiplicity  (m : nat_multiset) (a : nat) : nat :=
+    match m with 
+    | empty => 0
+    | h :: t => match h =? a with
+        | true => 1 + (multiplicity t a)
+        | false => multiplicity t a
+        end
+    end.
+
+Fixpoint nm_is_subset (m1 m2 : nat_multiset) : bool :=
+    match m1 with
+    | empty => true
+    | h :: t => match (multiplicity m1 h =? multiplicity m2 h) with
+        | true => match t with 
+            | empty => true
+            | _ => nm_is_subset t m2
+            end
+        | false => false
+        end
+    end.
+
+Definition nm_eq (m1 m2 : nat_multiset) : bool :=
+    nm_is_subset m1 m2 && nm_is_subset m2 m1.
+
+Notation "x =? y" := (nm_eq x y) (at level 70).
+
+Definition nm_is_proper_subset (m1 m2 : nat_multiset) :=
+    (nm_is_subset m1 m2) && notb (nm_eq m1 m2).
+
+Lemma empty_subset_all : forall m : nat_multiset,
+    nm_is_subset {} m = true.
+Proof.
+    intros m. simpl. reflexivity.
+Qed.
+
+Lemma set_is_own_subset : forall m : nat_multiset,
+    nm_is_subset m m = true.
+Proof.
+    intros m. unfold nm_is_subset.
+    (* TODO : Come back to this. Seems tough! *)
+    Admitted.
+
+(*
+    Exercise 3.1.1
+*)
+Lemma nm_eq_reflexive : forall (m1 : nat_multiset),
+    m1 =? m1 = true.
+Proof.
+    intros m1. unfold nm_eq. rewrite -> b_and_b_is_b.
+    rewrite -> set_is_own_subset. reflexivity.
+Qed. 
+
 Fixpoint minus (n m:nat) : nat :=
     match n, m with
     | O , _ => O
     | S _ , O => n
     | S n', S m' => minus n' m'
     end.
-
-End RealNumbers.
